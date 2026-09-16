@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#4f46e5"><link rel="manifest" href="manifest.json">
+<title>My Task Manager</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#f6f7fb;color:#171717}
+.app{max-width:720px;margin:auto;padding:18px}.head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+h1{font-size:25px;margin:0 0 4px}.muted{color:#6b7280;font-size:14px}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:14px;margin-top:14px}
+input,select,button{font:inherit;min-height:46px;border-radius:12px;border:1px solid #d9dce3;padding:10px 12px}
+input{width:100%;background:#fff}button{background:#fff;cursor:pointer}button.primary{background:#4f46e5;color:#fff;border-color:#4f46e5;font-weight:600}
+.form{display:grid;gap:9px}.row{display:grid;grid-template-columns:1fr auto;gap:8px}.filters{display:flex;gap:7px;overflow:auto;margin-top:12px}.filters button.active{background:#e8e7ff;border-color:#4f46e5}
+.task{display:grid;grid-template-columns:auto 1fr auto;gap:11px;align-items:center;padding:12px 0;border-bottom:1px solid #eee}.task:last-child{border-bottom:0}
+.task input[type=checkbox]{width:21px;height:21px;min-height:auto}.title{font-weight:600;word-break:break-word}.done{text-decoration:line-through;opacity:.55}.meta{font-size:12px;color:#6b7280;margin-top:3px}.empty{text-align:center;padding:28px 8px;color:#777}
+.actions{display:flex;gap:5px}.actions button{min-height:38px;padding:6px 9px;font-size:12px}.danger{color:#b42318}
+@media(max-width:430px){.app{padding:14px}.row{grid-template-columns:1fr}.row button{width:100%}.task{grid-template-columns:auto 1fr}.actions{grid-column:2}.actions button{flex:1}}
+</style></head>
+<body><div class="app">
+<div class="head"><div><h1>My Task Manager</h1><div class="muted">Create, assign and track team tasks</div></div></div>
+<div class="card form">
+<input id="title" placeholder="Enter task..." maxlength="200">
+<div class="row"><select id="member"><option value="">Assign to team member</option><option>Srinath</option><option>Sumanth</option><option>Rajkumar</option><option>Rabbani</option><option>Purna Sir</option><option>MVK Sir</option><option>Other</option></select><button id="add" class="primary">+ Add Task</button></div>
+</div>
+<div class="filters">
+<button data-f="All" class="active">All</button><button data-f="To Do">To Do</button><button data-f="In Progress">In Progress</button><button data-f="Completed">Completed</button>
+</div>
+<div id="list" class="card"></div>
+</div>
+<script>
+const KEY='my-task-manager-v1';let tasks=JSON.parse(localStorage.getItem(KEY)||'[]'),filter='All';
+const $=id=>document.getElementById(id);
+function save(){localStorage.setItem(KEY,JSON.stringify(tasks))}
+function render(){let a=tasks.filter(t=>filter==='All'||t.status===filter);$('list').innerHTML=a.length?a.map(t=>`<div class="task"><input type="checkbox" ${t.status==='Completed'?'checked':''} onchange="status('${t.id}',this.checked?'Completed':'To Do')"><div><div class="title ${t.status==='Completed'?'done':''}">${esc(t.title)}</div><div class="meta">👤 ${esc(t.member)} · ${t.status}</div></div><div class="actions"><button onclick="change('${t.id}')">Status</button><button onclick="reassign('${t.id}')">Assign</button><button class="danger" onclick="del('${t.id}')">Delete</button></div></div>`).join(''):'<div class="empty">No tasks here yet.</div>'}
+function esc(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+$('add').onclick=()=>{let title=$('title').value.trim(),member=$('member').value;if(!title||!member){alert('Enter a task and select a team member.');return}tasks.unshift({id:Date.now().toString(),title,member,status:'To Do'});$('title').value='';$('member').value='';save();render()}
+function status(id,s){let t=tasks.find(x=>x.id===id);if(t)t.status=s;save();render()}
+function change(id){let t=tasks.find(x=>x.id===id);let s=prompt('Enter status: To Do / In Progress / Completed',t.status);if(['To Do','In Progress','Completed'].includes(s)){t.status=s;save();render()}else if(s!==null)alert('Use exactly: To Do, In Progress, or Completed')}
+function reassign(id){let t=tasks.find(x=>x.id===id),m=prompt('Assign to:',t.member);if(m&&m.trim()){t.member=m.trim();save();render()}}
+function del(id){if(confirm('Delete this task?')){tasks=tasks.filter(x=>x.id!==id);save();render()}}
+document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{filter=b.dataset.f;document.querySelectorAll('[data-f]').forEach(x=>x.classList.toggle('active',x===b));render()});
+render();if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');
+</script></body></html>
